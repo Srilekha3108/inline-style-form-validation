@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Task 2 Form</title>
+</head>
+<body style="font-family: Arial; background: #f6f8fb; padding: 20px;">
+  <h2>Simple Contact Form</h2>
+  <form id="myForm" onsubmit="handleSubmit(event)">
+    <label>
+      Name: <br />
+      <input id="name" name="name" type="text" />
+      <div id="nameErr" style="color:red"></div>
+    </label><br /><br />
+
+    <label>
+      Email: <br />
+      <input id="email" name="email" type="email" />
+      <div id="emailErr" style="color:red"></div>
+    </label><br /><br />
+
+    <label>
+      Age: <br />
+      <input id="age" name="age" type="number" />
+      <div id="ageErr" style="color:red"></div>
+    </label><br /><br />
+
+    <label>
+      Message: <br />
+      <textarea id="message" name="message"></textarea>
+      <div id="messageErr" style="color:red"></div>
+    </label><br /><br />
+
+    <button type="submit">Send</button>
+    <div id="status" style="color:green"></div>
+  </form>
+
+  <script>
+    function clearErrors() {
+      document.getElementById("nameErr").textContent = "";
+      document.getElementById("emailErr").textContent = "";
+      document.getElementById("ageErr").textContent = "";
+      document.getElementById("messageErr").textContent = "";
+      document.getElementById("status").textContent = "";
+    }
+
+    function validateClient(data) {
+      const errors = {};
+      if (!data.name || data.name.trim().length < 2) errors.name = "Name too short";
+      if (!data.email.includes("@")) errors.email = "Invalid email";
+      const age = Number(data.age);
+      if (!data.age || isNaN(age) || age < 1 || age > 120) errors.age = "Invalid age";
+      if (!data.message || data.message.trim().length < 10) errors.message = "Message too short";
+      return errors;
+    }
+
+    async function handleSubmit(e) {
+      e.preventDefault();
+      clearErrors();
+
+      const data = {
+        name: document.getElementById("name").value,
+        email: document.getElementById("email").value,
+        age: document.getElementById("age").value,
+        message: document.getElementById("message").value,
+      };
+
+      const clientErrors = validateClient(data);
+      if (Object.keys(clientErrors).length) {
+        if (clientErrors.name) document.getElementById("nameErr").textContent = clientErrors.name;
+        if (clientErrors.email) document.getElementById("emailErr").textContent = clientErrors.email;
+        if (clientErrors.age) document.getElementById("ageErr").textContent = clientErrors.age;
+        if (clientErrors.message) document.getElementById("messageErr").textContent = clientErrors.message;
+        return;
+      }
+
+      try {
+        const resp = await fetch("http://localhost:3000/submit", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data),
+        });
+        const json = await resp.json();
+
+        if (!resp.ok) {
+          if (json.errors) {
+            if (json.errors.name) document.getElementById("nameErr").textContent = json.errors.name;
+            if (json.errors.email) document.getElementById("emailErr").textContent = json.errors.email;
+            if (json.errors.age) document.getElementById("ageErr").textContent = json.errors.age;
+            if (json.errors.message) document.getElementById("messageErr").textContent = json.errors.message;
+          }
+          document.getElementById("status").textContent = "Fix errors and try again";
+          return;
+        }
+
+        document.getElementById("status").textContent = "Saved! 🎉";
+        document.getElementById("myForm").reset();
+      } catch (err) {
+        document.getElementById("status").textContent = "Server not running?";
+      }
+    }
+  </script>
+</body>
+</html>
